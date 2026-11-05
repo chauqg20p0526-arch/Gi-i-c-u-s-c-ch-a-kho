@@ -273,40 +273,36 @@
                         <div class="space-y-1">
                             <label class="block text-xs font-bold text-slate-700">1. Tỷ lệ sử dụng sức chứa hiện tại (%)</label>
                             <div class="relative">
-                                <input type="number" step="0.1" id="q1_rate" required placeholder="VD: 85" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-8 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
+                                <input type="number" step="0.1" id="q1_rate" required placeholder="Nhập kết quả..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-8 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">%</span>
                             </div>
-                            <p class="text-[10px] text-slate-400">CT: (23.093 / 27.168) × 100%</p>
                         </div>
 
                         <!-- Q2 -->
                         <div class="space-y-1">
                             <label class="block text-xs font-bold text-slate-700">2. Số vị trí pallet còn trống hiện tại</label>
                             <div class="relative">
-                                <input type="number" id="q2_empty" required placeholder="VD: 4075" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
+                                <input type="number" id="q2_empty" required placeholder="Nhập kết quả..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">pallet</span>
                             </div>
-                            <p class="text-[10px] text-slate-400">CT: 27.168 − 23.093</p>
                         </div>
 
                         <!-- Q3 -->
                         <div class="space-y-1">
                             <label class="block text-xs font-bold text-slate-700">3. Tổng tồn kho sau khi nhập thêm</label>
                             <div class="relative">
-                                <input type="number" id="q3_total" required placeholder="VD: 27593" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
+                                <input type="number" id="q3_total" required placeholder="Nhập kết quả..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">pallet</span>
                             </div>
-                            <p class="text-[10px] text-slate-400">CT: 23.093 + 4.500</p>
                         </div>
 
                         <!-- Q4 -->
                         <div class="space-y-1">
                             <label class="block text-xs font-bold text-slate-700">4. Số pallet vượt quá sức chứa</label>
                             <div class="relative">
-                                <input type="number" id="q4_over" required placeholder="VD: 425" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
+                                <input type="number" id="q4_over" required placeholder="Nhập kết quả..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-14 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">pallet</span>
                             </div>
-                            <p class="text-[10px] text-slate-400">CT: 27.593 − 27.168</p>
                         </div>
                     </div>
                 </div>
@@ -322,24 +318,31 @@
                     </div>
 
                     <div class="p-5 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">5. Chênh lệch giữa Nhu cầu xuất & Năng lực xử lý</label>
-                                <div class="relative">
-                                    <input type="number" id="q5_diff" required placeholder="VD: 300" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-24 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
-                                    <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">pallet/ngày</span>
-                                </div>
-                                <p class="text-[10px] text-slate-400 mt-1">CT: 2.300 − 2.000</p>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">5. So sánh năng lực xử lý xuất hàng với nhu cầu</label>
+                                <select id="q5_compare" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-vml-lightBlue focus:outline-none bg-white font-medium">
+                                    <option value="">-- Chọn kết quả so sánh --</option>
+                                    <option value="nhieu_hon">Nhu cầu xuất HÀNG LỚN HƠN Năng lực xử lý</option>
+                                    <option value="bang_nhau">Nhu cầu xuất BẰNG Năng lực xử lý</option>
+                                    <option value="nho_hon">Nhu cầu xuất NHỎ HƠN Năng lực xử lý</option>
+                                </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">6. Đánh giá tình trạng năng lực xuất hàng</label>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">6. Mức chênh lệch (Nhu cầu xuất - Năng lực xử lý)</label>
+                                <div class="relative">
+                                    <input type="number" id="q5_diff" required placeholder="Nhập kết quả..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm pr-24 focus:ring-2 focus:ring-vml-lightBlue focus:outline-none font-semibold">
+                                    <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">pallet/ngày</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">7. Đánh giá ảnh hưởng đến hoạt động kho</label>
                                 <select id="q6_status" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-vml-lightBlue focus:outline-none bg-white font-medium">
                                     <option value="">-- Chọn đánh giá tình trạng --</option>
-                                    <option value="thieu">Kho bị thiếu năng lực (Nhu cầu > Năng lực)</option>
-                                    <option value="du">Kho dư thừa năng lực (Năng lực > Nhu cầu)</option>
-                                    <option value="canbang">Cân bằng hoàn hảo</option>
+                                    <option value="thieu">Thiếu 300 pallet/ngày, có nguy cơ tồn đọng đơn hàng</option>
+                                    <option value="du">Dư thừa năng lực, lãng phí nguồn lực xử lý</option>
+                                    <option value="canbang">Năng lực xử lý vừa đủ, kho vận hành ổn định</option>
                                 </select>
-                                <p class="text-[10px] text-slate-400 mt-1">Đánh giá ảnh hưởng đến tiến độ giao hàng</p>
                             </div>
                         </div>
                     </div>
@@ -675,6 +678,7 @@
             empty: 4075,       // 27.168 - 23.093 = 4.075
             total: 27593,      // 23.093 + 4.500 = 27.593
             over: 425,         // 27.593 - 27.168 = 425
+            compare: 'nhieu_hon', // Nhu cầu 2.300 > Năng lực 2.000
             diff: 300,         // 2.300 - 2.000 = 300
             status: 'thieu',
             storageOptimal: ['A', 'E'],
@@ -816,6 +820,7 @@
             const q2 = parseInt(document.getElementById('q2_empty').value);
             const q3 = parseInt(document.getElementById('q3_total').value);
             const q4 = parseInt(document.getElementById('q4_over').value);
+            const q5_compare = document.getElementById('q5_compare').value;
             const q5 = parseInt(document.getElementById('q5_diff').value);
             const q6 = document.getElementById('q6_status').value;
 
@@ -889,30 +894,44 @@
                 </div>`;
             }
 
-            // 5. Handling Difference
-            if (Math.abs(q5 - CORRECT.diff) <= 5) {
-                calcScore += 10;
+            // 5. Compare Handling vs Demand
+            if (q5_compare === CORRECT.compare) {
+                calcScore += 5;
                 detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
-                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q5. Chênh lệch xuất hàng:</strong> Chính xác (${q5} pallet/ngày)</span>
-                    <span class="font-bold text-emerald-700">+10 đ</span>
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q5. So sánh năng lực xuất:</strong> Chính xác (Nhu cầu xuất > Năng lực)</span>
+                    <span class="font-bold text-emerald-700">+5 đ</span>
                 </div>`;
             } else {
                 detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
-                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q5. Chênh lệch xuất hàng:</strong> Nhập ${q5}. Đáp án: 300 pallet/ngày</span>
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q5. So sánh năng lực xuất:</strong> Nhu cầu (2.300) lớn hơn Năng lực (2.000)</span>
                     <span class="font-bold text-red-700">0 đ</span>
                 </div>`;
             }
 
-            // 6. Status Assessment
-            if (q6 === CORRECT.status) {
+            // 6. Handling Difference
+            if (Math.abs(q5 - CORRECT.diff) <= 5) {
                 calcScore += 10;
                 detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
-                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q6. Đánh giá xuất hàng:</strong> Chính xác (Thiếu năng lực xử lý)</span>
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q6. Mức chênh lệch xuất hàng:</strong> Chính xác (${q5} pallet/ngày)</span>
                     <span class="font-bold text-emerald-700">+10 đ</span>
                 </div>`;
             } else {
                 detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
-                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q6. Đánh giá xuất hàng:</strong> Chưa đúng. Kho đang thiếu năng lực 300 pallet/ngày</span>
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q6. Mức chênh lệch xuất hàng:</strong> Nhập ${q5}. Đáp án: 300 pallet/ngày</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 7. Status Assessment
+            if (q6 === CORRECT.status) {
+                calcScore += 5;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q7. Đánh giá ảnh hưởng:</strong> Chính xác (Nguy cơ tồn đọng đơn & chậm giao)</span>
+                    <span class="font-bold text-emerald-700">+5 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q7. Đánh giá ảnh hưởng:</strong> Chưa đúng. Thiếu 300 pallet/ngày gây nguy cơ tồn đọng đơn</span>
                     <span class="font-bold text-red-700">0 đ</span>
                 </div>`;
             }
