@@ -13,55 +13,6 @@
     <!-- Canvas Confetti CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Firebase SDK Modules for Real-time Cloud Storage -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration (Anonymous public cloud database)
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDemoConfigKeyForGameSubmissionsOnly",
-            authDomain: "vml-warehouse-game.firebaseapp.com",
-            projectId: "vml-warehouse-game",
-            storageBucket: "vml-warehouse-game.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef123456"
-        };
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'vml-game2-mega-factory';
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Global variables exported to window
-        window.firebaseDB = db;
-        window.appId = appId;
-        window.addDoc = addDoc;
-        window.collection = collection;
-
-        // Auto authenticate anonymously
-        signInAnonymously(auth).then(() => {
-            console.log("Firebase Auth Connected");
-            // Listen to real-time submissions for Host Dashboard
-            const publicCol = collection(db, 'artifacts', appId, 'public', 'data', 'submissions');
-            onSnapshot(publicCol, (snapshot) => {
-                const subs = [];
-                snapshot.forEach(doc => {
-                    subs.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort by totalScore descending
-                subs.sort((a, b) => b.totalScore - a.totalScore);
-                window.cloudSubmissions = subs;
-                if (typeof window.renderBTCLeaderboard === 'function') {
-                    window.renderBTCLeaderboard();
-                }
-            }, (err) => console.log("Cloud sync listener status:", err.message));
-        }).catch(err => console.log("Cloud auth status:", err.message));
-    </script>
-
     <script>
         tailwind.config = {
             theme: {
@@ -154,10 +105,10 @@
 
             <!-- Top Header Controls -->
             <div class="flex items-center space-x-2">
-                <!-- Host Access Button with PIN protection -->
-                <button onclick="openHostModalDirect()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-xs font-bold text-slate-900 transition flex items-center gap-1.5 shadow-sm border border-amber-400 cursor-pointer">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>Xem Kết Quả Tất Cả Các Nhóm (BTC)</span>
+                <!-- Removed BTC Toggle Button for pure Team mode -->
+                <button onclick="downloadHistory()" class="px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-xs font-semibold text-blue-100 transition flex items-center gap-1.5 border border-blue-700/50 shadow-sm" title="Xem lịch sử bài đã lưu">
+                    <i class="fa-solid fa-floppy-disk text-amber-400"></i>
+                    <span>Bài Làm Đã Lưu</span>
                 </button>
                 <button onclick="resetGame()" class="px-2.5 py-1.5 rounded-lg bg-blue-800 hover:bg-blue-700 text-xs font-medium text-white transition" title="Làm mới bài nộp">
                     <i class="fa-solid fa-rotate-left"></i>
@@ -492,11 +443,11 @@
                     <!-- Submit Footer -->
                     <div class="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-                            <i class="fa-solid fa-shield-halved text-emerald-600 me-1"></i> Bài làm của nhóm sẽ được gửi bảo mật về hệ thống chấm điểm của BTC.
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Kiểm tra kỹ số liệu trước khi nhấn Gửi Bài.
                         </div>
-                        <button type="submit" id="btn-submit-main" class="w-full sm:w-auto bg-vml-accent hover:bg-orange-600 text-white font-extrabold px-8 py-3 rounded-xl shadow-lg hover:shadow-orange-200 transition flex items-center justify-center gap-2">
+                        <button type="submit" class="w-full sm:w-auto bg-vml-accent hover:bg-orange-600 text-white font-extrabold px-8 py-3 rounded-xl shadow-lg hover:shadow-orange-200 transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-paper-plane"></i>
-                            GỬI BÀI CHẨN ĐOÁN CHO BTC
+                            GỬI BÀI CHẨN ĐOÁN (NỘP ĐIỂM)
                         </button>
                     </div>
                 </div>
@@ -518,75 +469,56 @@
                 <button onclick="closeResult()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold px-2">&times;</button>
             </div>
 
-        <!-- HOST LOGIN PIN MODAL -->
-        <div id="host-pin-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4">
-                <div class="flex items-center space-x-3 text-amber-600">
-                    <div class="bg-amber-100 p-3 rounded-xl text-xl font-bold">
-                        <i class="fa-solid fa-user-shield"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-base text-slate-900">Xác Nhận Quyền BTC</h3>
-                        <p class="text-xs text-slate-500">Vui lòng nhập mật khẩu để xem bài làm của các nhóm</p>
-                    </div>
+            <!-- Score Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Điểm Tính Toán (NV1 & NV2)</span>
+                    <div id="calc-score" class="text-3xl font-black text-vml-blue my-1">0/60</div>
+                    <p id="calc-feedback" class="text-[11px] text-slate-500 font-medium">--</p>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu Ban Tổ Chức:</label>
-                    <input type="password" id="btc-pin-input" placeholder="Nhập mật khẩu (Mặc định: 123456)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold">
-                    <p id="pin-error-msg" class="text-[11px] text-red-600 font-semibold mt-1 hidden"><i class="fa-solid fa-triangle-exclamation me-1"></i> Mật khẩu chưa đúng, vui lòng thử lại!</p>
+                <div class="bg-slate-50 rounded-xl p-4 text-center border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Điểm Giải Pháp (NV3)</span>
+                    <div id="sol-score" class="text-3xl font-black text-amber-600 my-1">0/40</div>
+                    <p id="sol-feedback" class="text-[11px] text-slate-500 font-medium">--</p>
                 </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button onclick="closePinModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold">Hủy</button>
-                    <button onclick="verifyBtcPin()" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-xs font-extrabold shadow">Xem Kết Quả</button>
+                <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-200">
+                    <span class="text-xs font-bold text-vml-blue uppercase">Tổng Điểm Xếp Hạng</span>
+                    <div id="total-score" class="text-4xl font-black text-vml-blue my-1">0/100</div>
+                    <span id="score-rank" class="inline-block bg-vml-blue text-white text-[10px] font-bold px-3 py-0.5 rounded-full">Xếp hạng</span>
                 </div>
+            </div>
+
+            <!-- Detailed System Evaluation breakdown -->
+            <div class="space-y-3">
+                <h4 class="font-bold text-xs uppercase tracking-wider text-slate-500 border-b pb-2">Đánh Giá Chi Tiết Từng Mục</h4>
+                <div id="result-details" class="text-xs space-y-2">
+                    <!-- Dynamic feedback lines populated here -->
+                </div>
+            </div>
+
+            <!-- SAVE & EXPORT ACTION BUTTONS -->
+            <div class="bg-amber-50 rounded-xl p-3 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-xs text-amber-900 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                    <span>Kết quả bài làm đã được <strong>tự động lưu</strong> vào thiết bị này!</span>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button type="button" onclick="exportResultToText()" class="w-full sm:w-auto px-4 py-2 bg-vml-blue hover:bg-blue-900 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                        <i class="fa-solid fa-file-arrow-down"></i> Tải Báo Cáo (.TXT)
+                    </button>
+                    <button type="button" onclick="window.print()" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                        <i class="fa-solid fa-print"></i> In / Lưu PDF
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <button onclick="closeResult()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs rounded-lg transition">Xem lại phiếu bài làm</button>
             </div>
         </div>
 
-        <!-- HOST / BTC DEDICATED LEADERBOARD MODAL -->
-        <div id="host-leaderboard-modal" class="hidden bg-slate-950 text-white rounded-2xl shadow-2xl border border-slate-800 p-6 space-y-5">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-amber-400 text-slate-950 w-10 h-10 rounded-xl flex items-center justify-center text-xl font-black shadow">
-                        <i class="fa-solid fa-user-shield"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-white flex items-center gap-2">
-                            BẢNG XẾP HẠNG & KẾT QUẢ TẤT CẢ CÁC NHÓM (DÀNH CHO BẠN / BTC)
-                            <span id="cloud-badge" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded-full font-bold">Đồng bộ Đám Mây Trực Tiếp</span>
-                        </h3>
-                        <p class="text-xs text-slate-400">Tự động cập nhật tức thì khi có nhóm gửi bài từ bất kỳ thiết bị nào.</p>
-                    </div>
-                </div>
-                <button onclick="closeHostModal()" class="text-slate-400 hover:text-white text-2xl font-bold px-2">&times;</button>
-            </div>
-
-            <!-- Leaderboard Table -->
-            <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-slate-800 text-slate-200 uppercase text-[10px] font-bold">
-                        <tr>
-                            <th class="py-3 px-3">Hạng</th>
-                            <th class="py-3 px-3">Tên Nhóm</th>
-                            <th class="py-3 px-3 text-center">Điểm Tính Toán (60)</th>
-                            <th class="py-3 px-3 text-center">Điểm Giải Pháp (40)</th>
-                            <th class="py-3 px-3 text-center">Tổng Điểm</th>
-                            <th class="py-3 px-3 text-center">Phương Án Chọn</th>
-                            <th class="py-3 px-3 text-right">Thời Gian</th>
-                        </tr>
-                    </thead>
-                    <tbody id="btc-leaderboard-tbody" class="divide-y divide-slate-800/60">
-                        <tr>
-                            <td colspan="7" class="py-8 text-center text-slate-500 italic">Đang tải dữ liệu bài làm của các nhóm từ hệ thống đám mây...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-between items-center text-xs text-slate-400 pt-2">
-                <span>Mật khẩu BTC mặc định: <strong class="text-amber-400">123456</strong></span>
-                <button onclick="closeHostModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition font-semibold">Đóng bảng điều khiển</button>
-            </div>
-        </div>
+        <!-- HIDDEN BTC VIEW BACKEND FOR LEADERBOARD SYNC ONLY -->
+        <div id="view-btc" class="hidden"></div>
 
     </main>
 
@@ -605,11 +537,12 @@
     <!-- Interactive Game Scripts -->
     <script>
         // Game State Variables
+        let isBTCView = false;
         let timerSeconds = 15 * 60; // 15 Minutes
         let timerInterval = null;
         let isTimerRunning = true;
+        let teamSubmissions = []; // Array to hold team results locally & sync
         let currentSubmission = null; // Stores last submitted result for export
-        window.cloudSubmissions = []; // Stores cloud data for host
 
         // Correct Answers Reference Data
         const CORRECT = {
@@ -627,44 +560,522 @@
         // Initialize App & Timer on Load
         window.onload = function() {
             startTimer();
+            loadSubmissionsFromStorage();
         };
 
-        // Host Access Modal with In-page Password Box
-        function openHostModalDirect() {
-            document.getElementById('host-pin-modal').classList.remove('hidden');
-            document.getElementById('btc-pin-input').value = '';
-            document.getElementById('pin-error-msg').classList.add('hidden');
-            document.getElementById('btc-pin-input').focus();
-        }
-
-        function closePinModal() {
-            document.getElementById('host-pin-modal').classList.add('hidden');
-        }
-
-        function verifyBtcPin() {
-            const inputPin = document.getElementById('btc-pin-input').value.trim();
-            if (inputPin === "123456" || inputPin === "btc" || inputPin === "admin") {
-                closePinModal();
-                document.getElementById('host-leaderboard-modal').classList.remove('hidden');
-                document.getElementById('host-leaderboard-modal').scrollIntoView({ behavior: 'smooth' });
-                window.renderBTCLeaderboard();
-            } else {
-                document.getElementById('pin-error-msg').classList.remove('hidden');
+        // Load saved submissions from BroadcastChannel or Local Storage
+        function loadSubmissionsFromStorage() {
+            try {
+                const saved = localStorage.getItem('vml_game2_submissions');
+                if (saved) {
+                    teamSubmissions = JSON.parse(saved);
+                    renderBTCLeaderboard();
+                }
+            } catch(e) {
+                console.error("Local storage error:", e);
             }
         }
 
-        // Allow pressing Enter in password input
-        document.getElementById('btc-pin-input')?.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') {
-                verifyBtcPin();
+        function saveSubmissionsToStorage() {
+            try {
+                localStorage.setItem('vml_game2_submissions', JSON.stringify(teamSubmissions));
+            } catch(e) {
+                console.error("Local storage save error:", e);
+            }
+        }
+
+        // Broadcast Channel for Syncing across tabs/devices on same browser/domain
+        const syncChannel = new BroadcastChannel('vml_game2_sync');
+        syncChannel.onmessage = function(event) {
+            if (event.data && event.data.type === 'NEW_SUBMISSION') {
+                teamSubmissions.push(event.data.payload);
+                teamSubmissions.sort((a, b) => b.totalScore - a.totalScore);
+                saveSubmissionsToStorage();
+                renderBTCLeaderboard();
+            } else if (event.data && event.data.type === 'CLEAR') {
+                teamSubmissions = [];
+                saveSubmissionsToStorage();
+                renderBTCLeaderboard();
+            }
+        };
+
+        // Render BTC Leaderboard Table
+        function renderBTCLeaderboard() {
+            const tbody = document.getElementById('btc-leaderboard-tbody');
+            const badge = document.getElementById('submission-count-badge');
+            
+            badge.textContent = `${teamSubmissions.length} Nhóm đã nộp`;
+
+            if (teamSubmissions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500 italic">Chưa có nhóm nào gửi bài chẩn đoán. Khi các nhóm nộp bài, kết quả sẽ tự động xuất hiện tại đây.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            teamSubmissions.forEach((sub, idx) => {
+                let rankBadge = '';
+                if (idx === 0) rankBadge = `<span class="bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] me-1"><i class="fa-solid fa-crown me-0.5"></i> HẠNG 1</span>`;
+                else if (idx === 1) rankBadge = `<span class="bg-slate-300 text-slate-900 font-bold px-2 py-0.5 rounded text-[10px] me-1">HẠNG 2</span>`;
+                else if (idx === 2) rankBadge = `<span class="bg-amber-700 text-white font-bold px-2 py-0.5 rounded text-[10px] me-1">HẠNG 3</span>`;
+                else rankBadge = `<span class="text-slate-400 font-bold me-1">#${idx + 1}</span>`;
+
+                html += `
+                <tr class="hover:bg-slate-900/80 transition">
+                    <td class="py-2.5 px-3 font-semibold">${rankBadge}</td>
+                    <td class="py-2.5 px-3 font-bold text-white">${sub.teamName}</td>
+                    <td class="py-2.5 px-3 text-center text-blue-300 font-medium">${sub.calcScore}/60</td>
+                    <td class="py-2.5 px-3 text-center text-amber-300 font-medium">${sub.solScore}/40</td>
+                    <td class="py-2.5 px-3 text-center font-extrabold text-base text-emerald-400">${sub.totalScore}/100</td>
+                    <td class="py-2.5 px-3 text-center font-mono text-slate-300">
+                        <span class="bg-blue-900/60 px-1.5 py-0.5 rounded text-blue-200 me-1">${sub.selectedStorage.join('+')}</span>
+                        <span class="bg-amber-900/60 px-1.5 py-0.5 rounded text-amber-200">${sub.selectedHandling}</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right text-slate-400 text-[11px]">${sub.time}</td>
+                </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function clearTeamSubmissions() {
+            if (confirm("Bạn có chắc chắn muốn xóa tất cả kết quả nộp bài của các nhóm trên Bảng Xếp Hạng?")) {
+                teamSubmissions = [];
+                saveSubmissionsToStorage();
+                renderBTCLeaderboard();
+                syncChannel.postMessage({ type: 'CLEAR' });
+            }
+        }
+
+        // Interactive Timer Logic
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            isTimerRunning = true;
+        }
+
+        function updateTimer() {
+            if (!isTimerRunning) return;
+
+            if (timerSeconds <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('game-timer').textContent = "00:00";
+                document.getElementById('timer-status-text').textContent = "ĐÃ HẾT GIỜ THI ĐẤU!";
+                document.getElementById('game-timer').classList.add('text-red-500', 'animate-bounce');
+                return;
+            }
+
+            timerSeconds--;
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            const timeFormatted = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            document.getElementById('game-timer').textContent = timeFormatted;
+
+            // Update timer progress bar
+            const pct = (timerSeconds / (15 * 60)) * 100;
+            document.getElementById('timer-progress').style.width = pct + '%';
+
+            // Warning colors when low on time
+            if (timerSeconds < 180) { // < 3 mins
+                document.getElementById('game-timer').className = "text-4xl sm:text-5xl font-black tracking-tight font-mono text-red-400 animate-pulse";
+                document.getElementById('timer-progress').className = "bg-red-500 h-full w-full transition-all duration-1000";
+            }
+        }
+
+        function toggleTimer() {
+            isTimerRunning = !isTimerRunning;
+            const icon = document.getElementById('timer-icon');
+            if (isTimerRunning) {
+                icon.className = 'fa-solid fa-pause';
+                document.getElementById('timer-status-text').textContent = "Đồng hồ đang chạy...";
+            } else {
+                icon.className = 'fa-solid fa-play';
+                document.getElementById('timer-status-text').textContent = "Đã tạm dừng đồng hồ";
+            }
+        }
+
+        function resetTimer() {
+            timerSeconds = 15 * 60;
+            isTimerRunning = true;
+            document.getElementById('game-timer').className = "text-4xl sm:text-5xl font-black tracking-tight font-mono text-amber-400 drop-shadow";
+            document.getElementById('timer-progress').className = "bg-amber-400 h-full w-full transition-all duration-1000";
+            startTimer();
+        }
+
+        // Live Visualizer update on entering Q3 total pallet calculation
+        document.getElementById('q3_total').addEventListener('input', function(e) {
+            const val = parseFloat(e.target.value);
+            const baseBar = document.getElementById('bar-base');
+            const extraBar = document.getElementById('bar-extra');
+            const overflowBar = document.getElementById('bar-overflow');
+            const indicator = document.getElementById('capacity-indicator');
+            const desc = document.getElementById('visual-desc');
+            const badge = document.getElementById('visual-status-badge');
+
+            if (val && val > 0) {
+                const totalPct = (val / 27168) * 100;
+                indicator.textContent = `${totalPct.toFixed(1)}% (${val.toLocaleString('vi-VN')} / 27.168 Pallet)`;
+
+                if (val <= 27168) {
+                    // Safe capacity range
+                    const incomingPct = Math.max(0, totalPct - 85.0);
+                    extraBar.style.width = incomingPct + '%';
+                    extraBar.style.opacity = '1';
+                    overflowBar.style.opacity = '0';
+
+                    badge.textContent = "Sức chứa: An Toàn";
+                    badge.className = "bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-1 rounded-full";
+                    desc.textContent = "Lượng hàng nhập mới nằm trong ngưỡng sức chứa cho phép của kho.";
+                } else {
+                    // Overflow state (> 27.168)
+                    extraBar.style.width = '15%'; // Fill up to 100%
+                    extraBar.style.opacity = '1';
+                    
+                    const overVal = val - 27168;
+                    const overPct = Math.min((overVal / 27168) * 100, 20);
+                    overflowBar.style.width = overPct + '%';
+                    overflowBar.style.opacity = '1';
+                    overflowBar.classList.add('pulse-warning');
+
+                    badge.textContent = `VƯỢT CÔNG SUẤT: +${overVal} PALLET`;
+                    badge.className = "bg-red-600 text-white border border-red-700 text-xs font-black px-3 py-1 rounded-full animate-pulse";
+                    desc.textContent = `CẢNH BÁO: Kho vượt quá tải trọng thực tế ${overVal} pallet! Cần giải pháp xử lý gấp.`;
+                }
+            } else {
+                extraBar.style.opacity = '0';
+                overflowBar.style.opacity = '0';
+                indicator.textContent = "85.0% (23.093 / 27.168 Pallet)";
+                badge.textContent = "Sức chứa: 27.168 Pallet";
+                badge.className = "bg-blue-50 text-vml-blue border border-blue-200 text-xs font-bold px-3 py-1 rounded-full";
             }
         });
 
-        function openHostModal() {
-            openHostModalDirect();
+        // Enforce maximum 2 checkboxes selection for storage
+        const storageCheckboxes = document.querySelectorAll('input[name="storage_opt"]');
+        const countDisplay = document.getElementById('storage-count');
+
+        storageCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const checked = document.querySelectorAll('input[name="storage_opt"]:checked');
+                countDisplay.textContent = checked.length;
+
+                if (checked.length > 2) {
+                    cb.checked = false;
+                    countDisplay.textContent = 2;
+                    alert("Luật chơi: Mỗi nhóm chỉ chọn TỐI ĐA 02 phương án cho Vấn đề Sức chứa!");
+                }
+            });
+        });
+
+        // Submit Team Diagnosis Form & Auto Score
+        function submitForm(event) {
+            event.preventDefault();
+
+            const teamName = document.getElementById('team-name').value.trim() || "Đội Tư Vấn Kho";
+            const q1 = parseFloat(document.getElementById('q1_rate').value);
+            const q2 = parseInt(document.getElementById('q2_empty').value);
+            const q3 = parseInt(document.getElementById('q3_total').value);
+            const q4 = parseInt(document.getElementById('q4_over').value);
+            const q5_compare = document.getElementById('q5_compare').value;
+            const q5 = parseInt(document.getElementById('q5_diff').value);
+            const q6 = document.getElementById('q6_status').value;
+
+            const selectedStorage = Array.from(document.querySelectorAll('input[name="storage_opt"]:checked')).map(el => el.value);
+            const selectedHandling = document.querySelector('input[name="handling_opt"]:checked')?.value;
+            const reason = document.getElementById('solution_reason').value;
+
+            if (selectedStorage.length === 0) {
+                alert("Vui lòng chọn ít nhất 01 phương án giải quyết vấn đề Sức chứa!");
+                return;
+            }
+
+            // Calculation Scoring System
+            let calcScore = 0;
+            let solScore = 0;
+            let detailsHtml = '';
+
+            // 1. Rate
+            if (Math.abs(q1 - CORRECT.rate) <= 1) {
+                calcScore += 10;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q1. Tỷ lệ sức chứa:</strong> Chính xác (${q1}%)</span>
+                    <span class="font-bold text-emerald-700">+10 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q1. Tỷ lệ sức chứa:</strong> Nhập ${q1}%. Đáp án chuẩn là ≈ 85%</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 2. Empty Pallets
+            if (Math.abs(q2 - CORRECT.empty) <= 5) {
+                calcScore += 10;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q2. Vị trí trống:</strong> Chính xác (${q2} pallet)</span>
+                    <span class="font-bold text-emerald-700">+10 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q2. Vị trí trống:</strong> Nhập ${q2}. Đáp án: 4.075 pallet</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 3. Total Inventory
+            if (Math.abs(q3 - CORRECT.total) <= 5) {
+                calcScore += 10;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q3. Tổng tồn sau nhập:</strong> Chính xác (${q3} pallet)</span>
+                    <span class="font-bold text-emerald-700">+10 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q3. Tổng tồn sau nhập:</strong> Nhập ${q3}. Đáp án: 27.593 pallet</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 4. Over capacity
+            if (Math.abs(q4 - CORRECT.over) <= 5) {
+                calcScore += 10;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q4. Vượt sức chứa:</strong> Chính xác (${q4} pallet)</span>
+                    <span class="font-bold text-emerald-700">+10 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q4. Vượt sức chứa:</strong> Nhập ${q4}. Đáp án: 425 pallet</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 5. Compare Handling vs Demand
+            if (q5_compare === CORRECT.compare) {
+                calcScore += 5;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q5. So sánh năng lực xuất:</strong> Chính xác (Nhu cầu xuất > Năng lực)</span>
+                    <span class="font-bold text-emerald-700">+5 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q5. So sánh năng lực xuất:</strong> Nhu cầu (2.300) lớn hơn Năng lực (2.000)</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 6. Handling Difference
+            if (Math.abs(q5 - CORRECT.diff) <= 5) {
+                calcScore += 10;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q6. Mức chênh lệch xuất hàng:</strong> Chính xác (${q5} pallet/ngày)</span>
+                    <span class="font-bold text-emerald-700">+10 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q6. Mức chênh lệch xuất hàng:</strong> Nhập ${q5}. Đáp án: 300 pallet/ngày</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // 7. Status Assessment
+            if (q6 === CORRECT.status) {
+                calcScore += 5;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check-circle text-emerald-600 me-2"></i><strong>Q7. Đánh giá ảnh hưởng:</strong> Chính xác (Nguy cơ tồn đọng đơn & chậm giao)</span>
+                    <span class="font-bold text-emerald-700">+5 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-red-50 text-red-800 border border-red-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-times-circle text-red-600 me-2"></i><strong>Q7. Đánh giá ảnh hưởng:</strong> Chưa đúng. Thiếu 300 pallet/ngày gây nguy cơ tồn đọng đơn</span>
+                    <span class="font-bold text-red-700">0 đ</span>
+                </div>`;
+            }
+
+            // Solution Combo Scoring (40 pts)
+            const hasA = selectedStorage.includes('A');
+            const hasE = selectedStorage.includes('E');
+
+            if (hasA && hasE) {
+                solScore += 25; // Perfect storage combo A + E
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-star text-amber-500 me-2"></i><strong>Giải pháp Sức chứa:</strong> Xuất sắc! Nhóm chọn combo tối ưu (<strong>A + E</strong>)</span>
+                    <span class="font-bold text-emerald-700">+25 đ</span>
+                </div>`;
+            } else if (hasA || hasE) {
+                solScore += 18;
+                detailsHtml += `<div class="p-2 rounded bg-blue-50 text-blue-800 border border-blue-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-check text-blue-600 me-2"></i><strong>Giải pháp Sức chứa:</strong> Phù hợp (chọn ${selectedStorage.join(', ')})</span>
+                    <span class="font-bold text-blue-700">+18 đ</span>
+                </div>`;
+            } else {
+                detailsHtml += `<div class="p-2 rounded bg-amber-50 text-amber-800 border border-amber-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-info-circle text-amber-600 me-2"></i><strong>Giải pháp Sức chứa:</strong> Đã chọn (${selectedStorage.join(', ')}). Combo tối ưu: <strong>A + E</strong></span>
+                    <span class="font-bold text-amber-700">+10 đ</span>
+                </div>`;
+            }
+
+            // Handling option F (20 pts)
+            if (selectedHandling === 'F') {
+                solScore += 15;
+                detailsHtml += `<div class="p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-star text-amber-500 me-2"></i><strong>Giải pháp Năng lực xuất:</strong> Xuất sắc! Nhóm chọn phương án chuẩn (<strong>F</strong>)</span>
+                    <span class="font-bold text-emerald-700">+15 đ</span>
+                </div>`;
+            } else {
+                solScore += 8;
+                detailsHtml += `<div class="p-2 rounded bg-amber-50 text-amber-800 border border-amber-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-info-circle text-amber-600 me-2"></i><strong>Giải pháp Năng lực xuất:</strong> Đã chọn (<strong>${selectedHandling}</strong>). Phương án tối ưu: <strong>F</strong></span>
+                    <span class="font-bold text-amber-700">+8 đ</span>
+                </div>`;
+            }
+
+            // Reason & Explanation bonus (5 pts)
+            if (reason.length >= 10) {
+                solScore += 5;
+            }
+
+            const totalScore = calcScore + solScore;
+
+            // Record submission for Leaderboard & Local Storage
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('vi-VN');
+
+            currentSubmission = {
+                id: Date.now(),
+                teamName: teamName,
+                calcScore: calcScore,
+                solScore: solScore,
+                totalScore: totalScore,
+                q1: q1, q2: q2, q3: q3, q4: q4,
+                q5_compare: q5_compare, q5_diff: q5, q6_status: q6,
+                selectedStorage: selectedStorage,
+                selectedHandling: selectedHandling,
+                reason: reason,
+                time: timeStr
+            };
+
+            // Save to array and sort descending
+            teamSubmissions.push(currentSubmission);
+            teamSubmissions.sort((a, b) => b.totalScore - a.totalScore);
+            saveSubmissionsToStorage();
+
+            // Broadcast to other tabs
+            syncChannel.postMessage({ type: 'NEW_SUBMISSION', payload: currentSubmission });
+
+            // Render Scorecard Modal
+            document.getElementById('submit-timestamp').textContent = timeStr;
+            document.getElementById('res-team-name').textContent = `Kết Quả Thi Đấu: ${teamName}`;
+            document.getElementById('calc-score').textContent = `${calcScore}/60`;
+            document.getElementById('sol-score').textContent = `${solScore}/40`;
+            document.getElementById('total-score').textContent = `${totalScore}/100`;
+
+            document.getElementById('calc-feedback').textContent = calcScore === 60 ? "Tính toán hoàn hảo 100%" : "Có mục tính chưa chính xác";
+            document.getElementById('sol-feedback').textContent = solScore >= 35 ? "Combo giải cứu kho tối ưu nhất" : "Giải pháp khả thi";
+
+            const rankBadge = document.getElementById('score-rank');
+            if (totalScore >= 90) {
+                rankBadge.textContent = "HẠNG S - CHUYÊN GIA VẬN HÀNH KHO";
+                rankBadge.className = "inline-block bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider";
+            } else if (totalScore >= 75) {
+                rankBadge.textContent = "HẠNG A - ĐỘI TƯ VẤN XUẤT SẮC";
+                rankBadge.className = "inline-block bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider";
+            } else {
+                rankBadge.textContent = "HẠNG B - ĐẠT CHẨN VẬN HÀNH";
+                rankBadge.className = "inline-block bg-amber-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider";
+            }
+
+            document.getElementById('result-details').innerHTML = detailsHtml;
+            document.getElementById('result-modal').classList.remove('hidden');
+            document.getElementById('result-modal').scrollIntoView({ behavior: 'smooth' });
+
+            if (totalScore >= 80) {
+                triggerConfetti();
+            }
         }
 
-        function closeHostModal() {
-            document.getElementById('host-leaderboard-modal').classList.add('hidden');
+        // Export Result File function (.txt file download)
+        function exportResultToText() {
+            if (!currentSubmission) {
+                alert("Chưa có dữ liệu bài làm để tải!");
+                return;
+            }
+
+            const sub = currentSubmission;
+            const content = `================================================
+VINAMILK MEGA FACTORY - PHIẾU KẾT QUẢ CHẨN ĐOÁN KHO
+Game 2: Giải cứu sức chứa kho
+================================================
+Tên Nhóm Thi Đấu: ${sub.teamName}
+Thời gian nộp bài: ${sub.time}
+TỔNG ĐIỂM: ${sub.totalScore}/100 điểm
+------------------------------------------------
+1. KẾT QUẢ CHẨN ĐOÁN SỨC CHỨA (NV1):
+- Tỷ lệ sử dụng sức chứa: ${sub.q1}%
+- Vị trí pallet còn trống: ${sub.q2} pallet
+- Tổng lượng tồn sau khi nhập thêm: ${sub.q3} pallet
+- Số pallet vượt sức chứa: ${sub.q4} pallet
+
+2. KẾT QUẢ CHẨN ĐOÁN NĂNG LỰC XỬ LÝ (NV2):
+- Chênh lệch nhu cầu vs năng lực: ${sub.q5_diff} pallet/ngày
+- Đánh giá ảnh hưởng: ${sub.q6_status === 'thieu' ? 'Thiếu 300 pallet/ngày, có nguy cơ tồn đọng đơn' : 'Đã đánh giá'}
+
+3. PHƯƠNG ÁN CẢI THIỆN ĐÃ CHỌN (NV3):
+- Vấn đề Sức chứa: Phương án ${sub.selectedStorage.join(' + ')}
+- Vấn đề Năng lực xuất: Phương án ${sub.selectedHandling}
+- Lý do & Kết quả kỳ vọng: ${sub.reason}
+
+================================================
+Cảm ơn bạn đã tham gia thi đấu giải cứu kho Vinamilk!
+`;
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Ket_Qua_Giai_Cuu_Kho_${sub.teamName.replace(/\s+/g, '_')}.txt`;
+            link.click();
         }
-<!-- ... existing code -->
+
+        // Show Saved History
+        function downloadHistory() {
+            if (teamSubmissions.length === 0) {
+                alert("Chưa có lịch sử làm bài nào được lưu trên thiết bị này!");
+                return;
+            }
+
+            let msg = "DANH SÁCH BÀI LÀM ĐÃ LƯU TRÊN THIẾT BỊ:\n\n";
+            teamSubmissions.forEach((sub, i) => {
+                msg += `${i+1}. [${sub.time}] ${sub.teamName} - Total: ${sub.totalScore}/100 điểm (PA: ${sub.selectedStorage.join('+')} & ${sub.selectedHandling})\n`;
+            });
+
+            alert(msg);
+        }
+
+        function closeResult() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+
+        // Reset All Game Data
+        function resetGame() {
+            if (confirm("Làm mới lại toàn bộ bài tập tình huống cho đội của bạn?")) {
+                document.getElementById('game-form').reset();
+                closeResult();
+                document.getElementById('storage-count').textContent = '0';
+                document.getElementById('q3_total').dispatchEvent(new Event('input'));
+                resetTimer();
+            }
+        }
+
+        // Confetti Fireworks Trigger
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
