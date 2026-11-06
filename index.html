@@ -105,10 +105,10 @@
 
             <!-- Top Header Controls -->
             <div class="flex items-center space-x-2">
-                <!-- Removed BTC Toggle Button for pure Team mode -->
-                <button onclick="downloadHistory()" class="px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-800 text-xs font-semibold text-blue-100 transition flex items-center gap-1.5 border border-blue-700/50 shadow-sm" title="Xem lịch sử bài đã lưu">
-                    <i class="fa-solid fa-floppy-disk text-amber-400"></i>
-                    <span>Bài Làm Đã Lưu</span>
+                <!-- Google Sheet Setup Button for Host -->
+                <button onclick="configGoogleSheetUrl()" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-xs font-semibold text-white transition flex items-center gap-1.5 border border-emerald-500 shadow-sm" title="Cấu hình Google Sheet nhận bài">
+                    <i class="fa-solid fa-file-excel text-amber-300"></i>
+                    <span id="sheet-btn-text">Cấu Hình Google Sheet</span>
                 </button>
                 <button onclick="resetGame()" class="px-2.5 py-1.5 rounded-lg bg-blue-800 hover:bg-blue-700 text-xs font-medium text-white transition" title="Làm mới bài nộp">
                     <i class="fa-solid fa-rotate-left"></i>
@@ -443,11 +443,11 @@
                     <!-- Submit Footer -->
                     <div class="bg-slate-50 p-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
-                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Kiểm tra kỹ số liệu trước khi nhấn Gửi Bài.
+                            <i class="fa-solid fa-shield-halved text-emerald-600 me-1"></i> Bài làm của nhóm sẽ được gửi bảo mật về hệ thống chấm điểm của BTC.
                         </div>
-                        <button type="submit" class="w-full sm:w-auto bg-vml-accent hover:bg-orange-600 text-white font-extrabold px-8 py-3 rounded-xl shadow-lg hover:shadow-orange-200 transition flex items-center justify-center gap-2">
+                        <button type="submit" id="btn-submit-main" class="w-full sm:w-auto bg-vml-accent hover:bg-orange-600 text-white font-extrabold px-8 py-3 rounded-xl shadow-lg hover:shadow-orange-200 transition flex items-center justify-center gap-2">
                             <i class="fa-solid fa-paper-plane"></i>
-                            GỬI BÀI CHẨN ĐOÁN (NỘP ĐIỂM)
+                            GỬI BÀI CHẨN ĐOÁN CHO BTC
                         </button>
                     </div>
                 </div>
@@ -537,12 +537,13 @@
     <!-- Interactive Game Scripts -->
     <script>
         // Game State Variables
-        let isBTCView = false;
         let timerSeconds = 15 * 60; // 15 Minutes
         let timerInterval = null;
         let isTimerRunning = true;
-        let teamSubmissions = []; // Array to hold team results locally & sync
         let currentSubmission = null; // Stores last submitted result for export
+
+        // Google Sheet Web App Webhook URL (Stored locally in browser for the host or set by default)
+        let GOOGLE_SHEET_WEBHOOK_URL = localStorage.getItem('vml_game2_sheet_url') || "";
 
         // Correct Answers Reference Data
         const CORRECT = {
@@ -560,19 +561,28 @@
         // Initialize App & Timer on Load
         window.onload = function() {
             startTimer();
-            loadSubmissionsFromStorage();
+            updateSheetBtnText();
         };
 
-        // Load saved submissions from BroadcastChannel or Local Storage
-        function loadSubmissionsFromStorage() {
-            try {
-                const saved = localStorage.getItem('vml_game2_submissions');
-                if (saved) {
-                    teamSubmissions = JSON.parse(saved);
-                    renderBTCLeaderboard();
+        function configGoogleSheetUrl() {
+            const current = localStorage.getItem('vml_game2_sheet_url') || "";
+            const url = prompt("Dán đường link Google Apps Script Web App của bạn tại đây để nhận bài nộp tự động về Google Sheet:\n(Nếu để trống, bài làm vẫn sẽ tải về dạng file trên máy người nộp)", current);
+            if (url !== null) {
+                GOOGLE_SHEET_WEBHOOK_URL = url.trim();
+                localStorage.setItem('vml_game2_sheet_url', GOOGLE_SHEET_WEBHOOK_URL);
+                updateSheetBtnText();
+                if (GOOGLE_SHEET_WEBHOOK_URL) {
+                    alert("Đã kết nối thành công Google Sheet! Bây giờ mọi bài nộp của học viên sẽ gửi trực tiếp về Google Sheet riêng của bạn.");
                 }
-            } catch(e) {
-                console.error("Local storage error:", e);
+            }
+        }
+
+        function updateSheetBtnText() {
+            const btnText = document.getElementById('sheet-btn-text');
+            if (GOOGLE_SHEET_WEBHOOK_URL) {
+                btnText.textContent = "Google Sheet: Đã Kết Nối";
+            } else {
+                btnText.textContent = "Kết Nối Google Sheet";
             }
         }
 
@@ -948,20 +958,35 @@
                 solScore: solScore,
                 totalScore: totalScore,
                 q1: q1, q2: q2, q3: q3, q4: q4,
-                q5_compare: q5_compare, q5_diff: q5, q6_status: q6,
-                selectedStorage: selectedStorage,
+                q5_compare: q5_compare === 'nhieu_hon' ? 'Nhu cầu > Năng lực' : q5_compare, 
+                q5_diff: q5, 
+                q6_status: q6 === 'thieu' ? 'Thiếu 300 (Nguy cơ tồn đọng)' : q6,
+                selectedStorage: selectedStorage.join('+'),
                 selectedHandling: selectedHandling,
                 reason: reason,
                 time: timeStr
             };
 
-            // Save to array and sort descending
-            teamSubmissions.push(currentSubmission);
-            teamSubmissions.sort((a, b) => b.totalScore - a.totalScore);
-            saveSubmissionsToStorage();
+            // Send to Google Sheet if Webhook URL exists
+            if (GOOGLE_SHEET_WEBHOOK_URL) {
+                const submitBtn = document.getElementById('btn-submit-main');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Đang gửi bài cho BTC...`;
 
-            // Broadcast to other tabs
-            syncChannel.postMessage({ type: 'NEW_SUBMISSION', payload: currentSubmission });
+                fetch(GOOGLE_SHEET_WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentSubmission)
+                }).then(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> GỬI BÀI CHẨN ĐOÁN CHO BTC`;
+                }).catch(err => {
+                    console.error("Lỗi gửi dữ liệu:", err);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> GỬI BÀI CHẨN ĐOÁN CHO BTC`;
+                });
+            }
 
             // Render Scorecard Modal
             document.getElementById('submit-timestamp').textContent = timeStr;
